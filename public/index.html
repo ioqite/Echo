@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-theme-pref="auto">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <title>Echo · 文本传输助手</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E%F0%9F%93%A1%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- Login screen -->
+  <div id="login-view" class="view hidden">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo-icon">🔊</span>
+        <h1>Echo</h1>
+      </div>
+      <p class="login-subtitle">个人文本传输助手</p>
+      <form id="login-form" autocomplete="off">
+        <div class="form-group">
+          <input type="password" id="login-password" placeholder="密码" autocomplete="current-password" autofocus required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="login-submit">登录</button>
+        <div id="login-error" class="error-text"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Chat view -->
+  <div id="chat-view" class="view hidden">
+    <header class="app-header">
+      <div class="header-left">
+        <span class="logo-icon small">🔊</span>
+        <span class="app-title">Echo</span>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="batch-btn" title="多选" aria-label="多选">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button class="icon-btn" id="search-btn" title="搜索" aria-label="搜索">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </button>
+        <button class="icon-btn" id="theme-btn" title="切换主题" aria-label="主题">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="icon-btn" id="settings-btn" title="设置" aria-label="设置">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Search bar -->
+    <div id="search-bar" class="search-bar hidden">
+      <input type="search" id="search-input" placeholder="搜索全部消息…" autocomplete="off" />
+      <button class="icon-btn" id="search-close" title="关闭搜索">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <button class="icon-btn" id="search-clear" title="清除搜索">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Batch action bar -->
+    <div id="batch-bar" class="batch-bar hidden">
+      <label class="checkbox-label">
+        <input type="checkbox" id="select-all-toggle" />
+        <span>全选</span>
+      </label>
+      <span id="batch-count" class="batch-count">已选 0 条</span>
+      <button class="btn btn-danger btn-sm" id="batch-delete-btn" disabled>删除选中</button>
+      <button class="btn btn-ghost btn-sm" id="batch-cancel-btn">退出多选</button>
+    </div>
+
+    <main id="messages-container" class="messages-container">
+      <div id="load-more-top" class="load-more hidden">
+        <button class="btn btn-ghost btn-sm" id="load-more-btn">加载更多</button>
+      </div>
+      <div id="messages-list" class="messages-list"></div>
+      <div id="scroll-bottom-anchor"></div>
+    </main>
+
+    <!-- Editor (bottom) -->
+    <footer class="editor-footer">
+      <div class="editor-format-row">
+        <div class="format-options">
+          <label class="radio-pill">
+            <input type="radio" name="format" value="plain" checked />
+            <span>纯文本</span>
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="format" value="markdown" />
+            <span>Markdown</span>
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="format" value="code" />
+            <span>代码</span>
+          </label>
+          <select id="language-select" class="language-select hidden"></select>
+        </div>
+        <div class="editor-meta">
+          <span id="char-counter" class="char-counter">0 / 600 KiB</span>
+          <button class="btn btn-primary btn-sm" id="send-btn" title="Ctrl/Cmd+Enter 发送">
+            发送
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="editor-host" class="editor-host"></div>
+      <div class="editor-hint">Enter 换行 · Ctrl/Cmd+Enter 发送 · Tab 插入 4 空格</div>
+    </footer>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <header class="modal-header">
+        <h2>设置</h2>
+        <button class="icon-btn" id="settings-close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+      <div class="modal-body">
+        <section class="settings-section">
+          <h3>外观</h3>
+          <div class="form-row">
+            <label class="form-label">主题</label>
+            <div class="theme-options">
+              <label class="radio-pill"><input type="radio" name="setting-theme" value="auto" /><span>跟随系统</span></label>
+              <label class="radio-pill"><input type="radio" name="setting-theme" value="light" /><span>浅色</span></label>
+              <label class="radio-pill"><input type="radio" name="setting-theme" value="dark" /><span>深色</span></label>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="setting-font-size">编辑器字号 (px)</label>
+            <input type="number" id="setting-font-size" min="12" max="32" step="1" value="16" class="setting-input" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="setting-tab-size">Tab 宽度 (空格数)</label>
+            <input type="number" id="setting-tab-size" min="2" max="8" step="1" value="4" class="setting-input" />
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>编辑器默认值</h3>
+          <div class="form-row">
+            <label class="form-label" for="setting-default-format">默认格式</label>
+            <div class="theme-options">
+              <label class="radio-pill"><input type="radio" name="setting-default-format" value="plain" /><span>纯文本</span></label>
+              <label class="radio-pill"><input type="radio" name="setting-default-format" value="markdown" /><span>Markdown</span></label>
+              <label class="radio-pill"><input type="radio" name="setting-default-format" value="code" /><span>代码</span></label>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="setting-default-language">默认编程语言（代码格式下使用）</label>
+            <select id="setting-default-language" class="setting-input"></select>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>消息加载与轮询</h3>
+          <div class="form-row">
+            <label class="form-label" for="setting-initial-limit">首屏加载条数</label>
+            <input type="number" id="setting-initial-limit" min="5" max="100" step="1" value="10" class="setting-input" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="setting-load-more-limit">每次懒加载条数</label>
+            <input type="number" id="setting-load-more-limit" min="5" max="100" step="1" value="30" class="setting-input" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="setting-poll-interval">轮询间隔（秒，0=禁用）</label>
+            <input type="number" id="setting-poll-interval" min="0" max="60" step="1" value="3" class="setting-input" />
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>显示</h3>
+          <div class="form-row">
+            <label class="form-label" for="setting-collapse-lines">长消息折叠阈值（行数）</label>
+            <input type="number" id="setting-collapse-lines" min="0" max="500" step="1" value="20" class="setting-input" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="setting-msg-size">消息字号 (px)</label>
+            <input type="number" id="setting-msg-size" min="12" max="24" step="1" value="16" class="setting-input" />
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>账户</h3>
+          <form id="change-password-form" autocomplete="off">
+            <input type="password" id="cp-current" placeholder="当前密码" autocomplete="current-password" required />
+            <input type="password" id="cp-new" placeholder="新密码" autocomplete="new-password" required />
+            <input type="password" id="cp-confirm" placeholder="再次输入新密码" autocomplete="new-password" required />
+            <button type="submit" class="btn btn-primary">保存</button>
+            <div id="cp-message" class="form-message"></div>
+          </form>
+          <div class="form-row" style="margin-top:12px;">
+            <button class="btn btn-ghost" id="logout-btn">退出登录</button>
+          </div>
+        </section>
+        <section class="settings-section about">
+          <h3>关于</h3>
+          <p>Echo · 基于 Cloudflare Workers + D1 的个人文本传输助手</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit message modal -->
+  <div id="edit-modal" class="modal modal-full hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <header class="modal-header">
+        <h2>编辑消息</h2>
+        <div class="modal-header-actions">
+          <button class="btn btn-primary btn-sm" id="edit-save-btn">保存</button>
+          <button class="icon-btn" id="edit-close">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="modal-body edit-modal-body">
+        <div class="editor-format-row">
+          <div class="format-options">
+            <label class="radio-pill"><input type="radio" name="edit-format" value="plain" checked /><span>纯文本</span></label>
+            <label class="radio-pill"><input type="radio" name="edit-format" value="markdown" /><span>Markdown</span></label>
+            <label class="radio-pill"><input type="radio" name="edit-format" value="code" /><span>代码</span></label>
+            <select id="edit-language-select" class="language-select hidden"></select>
+          </div>
+          <div class="editor-meta">
+            <span id="edit-char-counter" class="char-counter">0 / 600 KiB</span>
+          </div>
+        </div>
+        <div id="edit-editor-host" class="editor-host editor-host-tall"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+name = "echo"
+main = "src/worker.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets served from ./public directory
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# D1 database binding
+# Create the database first with: wrangler d1 create echo-db
+# Then paste the database_id below
+[[d1_databases]]
+binding = "DB"
+database_name = "echo-db"
+database_id = "3f6b8524-a705-4f46-9b70-d7603c4c4bca" # REPLACE_WITH_YOUR_DATABASE_ID
+
+# Initial password (used only on first run; afterwards password is stored in D1)
+# For production, use: wrangler secret put PASSWORD
+[vars]
+PASSWORD = "change-me-please"
+
+# Optional: restrict by setting a custom session cookie name
+# SESSION_COOKIE_NAME = "echo_session"

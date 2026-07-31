@@ -1,0 +1,10 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+echo.zip
+public/main.js
+public/main.js.map
+public/chunks/
+*.log
+.DS_Store
