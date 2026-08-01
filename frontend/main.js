@@ -29,6 +29,7 @@ const el = {
   searchClear: $('#search-clear'),
 
   batchBtn: $('#batch-btn'),
+  refreshBtn: $('#refresh-btn'),
   batchBar: $('#batch-bar'),
   selectAllToggle: $('#select-all-toggle'),
   batchCount: $('#batch-count'),
@@ -37,6 +38,7 @@ const el = {
 
   themeBtn: $('#theme-btn'),
   settingsBtn: $('#settings-btn'),
+  floatingShell: $('#floating-shell'),
 
   editorHost: $('#editor-host'),
   sendBtn: $('#send-btn'),
@@ -53,6 +55,9 @@ const el = {
   cpMessage: $('#cp-message'),
   logoutBtn: $('#logout-btn'),
   settingThemeRadios: $$('input[name="setting-theme"]'),
+  settingWindowWidth: $('#setting-window-width'),
+  settingWindowHeight: $('#setting-window-height'),
+  settingIconScale: $('#setting-icon-scale'),
   settingFontSize: $('#setting-font-size'),
   settingTabSize: $('#setting-tab-size'),
   settingDefaultFormatRadios: $$('input[name="setting-default-format"]'),
@@ -77,6 +82,9 @@ const el = {
 // ---------- Settings defaults ----------
 const DEFAULT_SETTINGS = {
   theme: 'auto',
+  windowWidth: 90,      // % of screen width
+  windowHeight: 92,     // % of screen height
+  iconScale: 1,         // multiplier for icon-btn size
   fontSize: 16,
   tabSize: 4,
   defaultFormat: 'plain',
@@ -95,6 +103,13 @@ let settings = { ...DEFAULT_SETTINGS };
 function clampInt(v, min, max, def) {
   v = parseInt(v, 10);
   if (isNaN(v)) return def;
+  return Math.max(min, Math.min(max, v));
+}
+
+function clampFloat(v, min, max, def, step) {
+  v = parseFloat(v);
+  if (isNaN(v)) return def;
+  if (step) v = Math.round(v / step) * step;
   return Math.max(min, Math.min(max, v));
 }
 
@@ -118,6 +133,9 @@ async function saveSettings() {
 function applySettingsToUI() {
   // Theme
   el.settingThemeRadios.forEach(r => r.checked = (r.value === (settings.theme || 'auto')));
+  el.settingWindowWidth.value = settings.windowWidth;
+  el.settingWindowHeight.value = settings.windowHeight;
+  el.settingIconScale.value = settings.iconScale;
   el.settingFontSize.value = settings.fontSize;
   el.settingTabSize.value = settings.tabSize;
   el.settingDefaultFormatRadios.forEach(r => r.checked = (r.value === settings.defaultFormat));
@@ -132,8 +150,11 @@ function applySettingsToUI() {
 function applySettingsToRuntime() {
   // Apply theme
   applyTheme(settings.theme || 'auto');
-  // Apply CSS var for msg font size
+  // Apply CSS vars: msg font size, icon scale, window w/h
   document.documentElement.style.setProperty('--msg-font-size', settings.msgSize + 'px');
+  document.documentElement.style.setProperty('--icon-scale', String(settings.iconScale));
+  document.documentElement.style.setProperty('--window-w', settings.windowWidth + 'vw');
+  document.documentElement.style.setProperty('--window-h', settings.windowHeight + 'vh');
   // Apply editor font size + tab size to existing editors
   if (state.mainEditor) state.mainEditor.setFontSize(settings.fontSize);
   if (state.editEditor) state.editEditor.setFontSize(settings.fontSize);
@@ -141,6 +162,11 @@ function applySettingsToRuntime() {
   if (state.mainEditor && state.mainEditor.getDoc() === '') {
     setSelectedFormat(el.formatRadios, settings.defaultFormat);
     onMainFormatChange();
+  }
+  // Show/hide refresh button based on poll interval (0 = disabled => show refresh)
+  if (el.refreshBtn) {
+    if (settings.pollInterval === 0) el.refreshBtn.classList.remove('hidden');
+    else el.refreshBtn.classList.add('hidden');
   }
   // Restart polling with new interval
   if (state.pollTimer !== undefined) startPolling();
@@ -826,6 +852,9 @@ function closeSettings() {
 function readSettingsFromUI() {
   const next = { ...settings };
   next.theme = (el.settingThemeRadios.find(r => r.checked) || {}).value || 'auto';
+  next.windowWidth = clampInt(el.settingWindowWidth.value, 40, 100, 90);
+  next.windowHeight = clampInt(el.settingWindowHeight.value, 50, 100, 92);
+  next.iconScale = clampFloat(el.settingIconScale.value, 0.7, 2, 1, 0.1);
   next.fontSize = clampInt(el.settingFontSize.value, 12, 32, 16);
   next.tabSize = clampInt(el.settingTabSize.value, 2, 8, 4);
   next.defaultFormat = (el.settingDefaultFormatRadios.find(r => r.checked) || {}).value || 'plain';
@@ -841,6 +870,7 @@ function readSettingsFromUI() {
 // Wire up settings live-preview + save on change
 function wireSettingsInputs() {
   const inputs = [
+    el.settingWindowWidth, el.settingWindowHeight, el.settingIconScale,
     el.settingFontSize, el.settingTabSize, el.settingInitialLimit,
     el.settingLoadMoreLimit, el.settingPollInterval, el.settingCollapseLines,
     el.settingMsgSize, el.settingDefaultLanguage,
@@ -999,6 +1029,13 @@ async function init() {
 
   // Send button
   el.sendBtn.addEventListener('click', sendMessage);
+
+  // Refresh button (only visible when polling is disabled)
+  el.refreshBtn.addEventListener('click', async () => {
+    el.refreshBtn.classList.add('spinning');
+    await pollForNew();
+    setTimeout(() => el.refreshBtn.classList.remove('spinning'), 400);
+  });
 
   // Theme cycle button (top bar)
   el.themeBtn.addEventListener('click', async () => {

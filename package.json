@@ -8,7 +8,8 @@
     "build:frontend": "node build.js",
     "build": "npm run build:frontend",
     "dev": "npm run build:frontend && wrangler dev",
-    "deploy": "npm run build:frontend && wrangler deploy",
+    "deploy": "bash scripts/deploy.sh",
+    "prepare-wrangler": "node scripts/prepare-wrangler.js",
     "db:init": "wrangler d1 execute echo-db --file=./schema.sql",
     "db:init:local": "wrangler d1 execute echo-db --local --file=./schema.sql"
   },

@@ -9,18 +9,30 @@ directory = "./public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-# D1 database binding
-# Create the database first with: wrangler d1 create echo-db
-# Then paste the database_id below
+# D1 database binding.
+#
+# The database_id MUST be provided. There are two ways:
+#
+#   Option A (recommended for local dev / single deployment):
+#     1. Run: npx wrangler d1 create echo-db
+#     2. Paste the printed database_id below.
+#
+#   Option B (recommended for CI / multiple environments):
+#     1. Create a `.dev.vars` file locally (gitignored) with:
+#          ECHO_DB_ID=<your-database-id>
+#     2. Or set ECHO_DB_ID in your GitHub Actions secrets.
+#     3. Use `wrangler deploy --env production` with a separate [[d1_databases]] block
+#        that reads from a script. (See deploy.yml for the GitHub Actions approach.)
+#
+# Wrangler does not yet support env-var interpolation in wrangler.toml directly,
+# so for CI we generate wrangler.toml from a template (see scripts/prepare-wrangler.js).
 [[d1_databases]]
 binding = "DB"
 database_name = "echo-db"
-database_id = "3f6b8524-a705-4f46-9b70-d7603c4c4bca" # REPLACE_WITH_YOUR_DATABASE_ID
+database_id = "291f1f9b-a2ef-41b7-a5a7-5054f1570f20"
 
-# Initial password (used only on first run; afterwards password is stored in D1)
-# For production, use: wrangler secret put PASSWORD
+# Initial password (used only on first run; afterwards password is stored in D1).
+# For production, ALWAYS use a secret instead:
+#   npx wrangler secret put PASSWORD
 [vars]
 PASSWORD = "change-me-please"
-
-# Optional: restrict by setting a custom session cookie name
-# SESSION_COOKIE_NAME = "echo_session"

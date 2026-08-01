@@ -13,6 +13,13 @@
   --footer-max: 55vh;
 
   --transition: 160ms ease;
+
+  /* Runtime-set CSS vars (overridden by JS based on user settings) */
+  --msg-font-size: 16px;
+  --icon-scale: 1;
+  --window-w: 90vw;
+  --window-h: 92vh;
+  --icon-btn-size: 40px;        /* calc'd from scale */
 }
 
 [data-theme="light"] {
@@ -143,15 +150,20 @@ input, textarea, select { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: calc(40px * var(--icon-scale));
+  height: calc(40px * var(--icon-scale));
   border: none;
   background: transparent;
   color: var(--text-muted);
   border-radius: var(--radius-sm);
   transition: all var(--transition);
 }
+.icon-btn svg { width: calc(22px * var(--icon-scale)); height: calc(22px * var(--icon-scale)); }
 .icon-btn:hover { background: var(--bg-elev); color: var(--text); }
+
+/* Refresh button spin animation */
+.icon-btn.spinning svg { animation: spin 0.6s linear; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* ---------- Login ---------- */
 #login-view {
@@ -164,7 +176,7 @@ input, textarea, select { font-family: inherit; }
 }
 .login-card {
   width: 100%;
-  max-width: 360px;
+  max-width: min(420px, 90vw);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -211,11 +223,32 @@ input, textarea, select { font-family: inherit; }
   text-align: center;
 }
 
-/* ---------- App layout ---------- */
+/* ---------- App layout (floating shell) ---------- */
 #chat-view {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  padding: 0;
+  /* Subtle backdrop so the floating card stands out */
+  background:
+    radial-gradient(circle at 20% 10%, var(--bg-elev) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, var(--bg-elev) 0%, transparent 50%),
+    var(--bg);
+}
+
+.floating-shell {
+  display: flex;
+  flex-direction: column;
+  width: var(--window-w);
+  height: var(--window-h);
+  max-width: 1400px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
   overflow: hidden;
 }
 
@@ -584,14 +617,15 @@ body.batch-mode .messages-list { padding-left: 36px; }
 
 .editor-host {
   position: relative;
-  height: 140px;
-  min-height: 80px;
+  height: 18vh;
+  min-height: 90px;
+  max-height: var(--footer-max);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
   overflow: hidden;
 }
-.editor-host-tall { height: 60vh; min-height: 240px; }
+.editor-host-tall { height: 75vh; min-height: 240px; }
 .editor-host .cm-editor {
   height: 100%;
   font-size: 16px;
@@ -800,14 +834,21 @@ select.setting-input { width: auto; min-width: 140px; cursor: pointer; }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 640px) {
-  :root { --header-h: 54px; }
-  .app-header { padding: 0 8px; }
+  :root {
+    --header-h: 54px;
+    /* On mobile, the floating shell fills the screen */
+    --window-w: 100vw;
+    --window-h: 100dvh;
+  }
+  #chat-view { padding: 0; }
+  .floating-shell { border-radius: 0; border: none; box-shadow: none; max-width: 100%; }
+  .app-header { padding: 0 8px; border-radius: 0; }
   .header-right { gap: 0; }
-  .icon-btn { width: 38px; height: 38px; }
+  .icon-btn { width: calc(38px * var(--icon-scale)); height: calc(38px * var(--icon-scale)); }
   .messages-container { padding: 10px 8px 6px; }
   .msg { padding: 10px 12px; }
   .editor-footer { padding: 8px 10px 10px; }
-  .editor-host { height: 110px; }
+  .editor-host { height: 18vh; min-height: 90px; }
   .format-options { gap: 5px; }
   .radio-pill span { padding: 6px 11px; font-size: 13px; }
   .editor-hint { font-size: 11px; }

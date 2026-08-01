@@ -20,8 +20,11 @@
 - ⏰ 时间戳：相对（"5 分钟前"）+ 完整（hover 显示）
 - 🛠 编辑历史消息弹出近全屏窗口；新建消息底部编辑框
 - 💾 草稿自动保存到云端，跨设备同步（下次打开恢复未发送内容 + 格式 + 语言）
-- ⚙️ 设置面板（右上角齿轮）支持 UI 调节：主题、编辑器字号、Tab 宽度、默认格式、默认编程语言、首屏/懒加载条数、轮询间隔、折叠行数、消息字号 —— 全部跨设备同步
+- ⚙️ 设置面板（右上角齿轮）支持 UI 调节：主题、悬浮窗宽/高（屏幕 %）、图标大小倍率、编辑器字号、Tab 宽度、默认格式、默认编程语言、首屏/懒加载条数、轮询间隔、折叠行数、消息字号 —— 全部跨设备同步
 - 📨 新消息插入到底部（聊天流式），符合直觉
+- 🪟 悬浮卡片式界面（居中显示，带阴影），移动端自动全屏
+- 🔄 轮询间隔=0（禁用）时左上角显示手动刷新按钮
+- 🚀 一键部署：`./scripts/deploy.sh` 或 GitHub Actions 推送即部署
 
 ## 项目结构
 
@@ -40,6 +43,11 @@ echo/
 │   ├── styles.css
 │   ├── main.js            # 构建产物
 │   └── chunks/            # 构建产物（懒加载分块）
+├── scripts/
+│   ├── deploy.sh          # 一键部署脚本
+│   └── prepare-wrangler.js # 从环境变量注入 database_id
+├── .github/workflows/
+│   └── deploy.yml         # GitHub Actions 自动部署
 ├── schema.sql             # D1 数据库 schema
 ├── wrangler.toml          # Cloudflare Workers 配置
 ├── build.js               # 前端构建脚本
@@ -48,29 +56,61 @@ echo/
 
 ## 部署步骤
 
-### 1. 安装依赖
+### 方式 A：一键部署脚本（推荐）
+
+```bash
+cd echo
+npm install
+./scripts/deploy.sh
+```
+
+脚本会自动完成：安装依赖 → 创建/复用 D1 数据库 → 注入 database_id → 初始化 schema → 设置 PASSWORD secret → 构建前端 → 部署。
+
+如果还没有 D1 数据库，脚本会自动创建并把 ID 存到 `.dev.vars`（下次自动复用）。也可以预先 `export ECHO_DB_ID=xxx`。
+
+### 方式 B：GitHub Actions 自动部署（推送即部署）
+
+1. 把本仓库推到 GitHub
+2. 在仓库 Settings → Secrets and variables → Actions 添加：
+   - `CLOUDFLARE_API_TOKEN` — Cloudflare API Token（权限：Edit Cloudflare Workers 模板）
+   - `CLOUDFLARE_ACCOUNT_ID` — Cloudflare Account ID（`wrangler whoami` 可查）
+   - `ECHO_DB_ID` — D1 数据库 ID（首次可本地 `npx wrangler d1 create echo-db` 创建后填入）
+   - `ECHO_PASSWORD` — 初始登录密码
+3. 推送到 `main` 分支，GitHub Actions 自动构建+部署
+
+详见 `.github/workflows/deploy.yml`。
+
+### 方式 C：手动分步部署
+
+#### 1. 安装依赖
 
 ```bash
 cd echo
 npm install
 ```
 
-### 2. 创建 D1 数据库
+#### 2. 创建 D1 数据库
 
 ```bash
 npx wrangler d1 create echo-db
 ```
 
-把命令输出中的 `database_id` 填入 `wrangler.toml`：
+#### 3. 配置 database_id（三种方式任选其一）
 
-```toml
-[[d1_databases]]
-binding = "DB"
-database_name = "echo-db"
-database_id = "<上一步输出的 database_id>"
+**方式 1：直接改 wrangler.toml** — 把打印的 database_id 粘贴到 `wrangler.toml` 里替换 `REPLACE_WITH_YOUR_DATABASE_ID`。
+
+**方式 2：用 .dev.vars（本地开发推荐）** — 在项目根创建 `.dev.vars` 文件（已被 gitignore）：
 ```
+ECHO_DB_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+PASSWORD=your-password
+```
+然后部署前运行 `node scripts/prepare-wrangler.js` 把 ID 注入 wrangler.toml。
 
-### 3. 初始化数据库
+**方式 3：用环境变量（CI 推荐）** — `ECHO_DB_ID=xxx node scripts/prepare-wrangler.js`
+
+> Wrangler 目前不支持在 wrangler.toml 里直接引用环境变量，所以需要用 prepare-wrangler.js 在部署前做替换。`scripts/deploy.sh` 和 GitHub Actions workflow 都已内置这一步。
+
+#### 4. 初始化数据库
 
 ```bash
 # 本地（开发）
@@ -80,9 +120,7 @@ npx wrangler d1 execute echo-db --local --file=./schema.sql
 npx wrangler d1 execute echo-db --remote --file=./schema.sql
 ```
 
-### 4. 设置初始密码
-
-编辑 `wrangler.toml` 中的 `[vars].PASSWORD`，或更推荐的做法——使用 secret：
+#### 5. 设置初始密码
 
 ```bash
 npx wrangler secret put PASSWORD
@@ -91,15 +129,10 @@ npx wrangler secret put PASSWORD
 
 > 注意：`PASSWORD` 仅作为首次访问时的初始密码。一旦登录后在 UI 中修改了密码，新密码会写入 D1 数据库的 `meta` 表，环境变量不再生效。
 
-### 5. 构建前端
+#### 6. 构建前端并部署
 
 ```bash
 npm run build
-```
-
-### 6. 部署
-
-```bash
 npx wrangler deploy
 ```
 
@@ -167,15 +200,18 @@ meta(key, value) -- 存储 password_hash / settings / draft 等
 大多数常量都可在「设置」面板里 UI 调节（无需改代码），且会跨设备同步：
 
 - 主题（跟随系统 / 浅色 / 深色）
-- 编辑器字号（10–28 px）
+- 悬浮窗宽度（屏幕的 40–100%）
+- 悬浮窗高度（屏幕的 50–100%）
+- 图标大小倍率（0.7–2.0，相对于默认尺寸）
+- 编辑器字号（12–32 px）
 - Tab 宽度（2–8 空格）
 - 默认格式（纯文本 / Markdown / 代码）
 - 默认编程语言（代码格式下自动使用）
 - 首屏加载条数（5–100）
 - 每次懒加载条数（5–100）
-- 轮询间隔（0–60 秒，0=禁用）
+- 轮询间隔（0–60 秒，0=禁用并显示手动刷新按钮）
 - 长消息折叠阈值（0–500 行，0=永不折叠）
-- 消息字号（11–22 px）
+- 消息字号（12–24 px）
 
 仅消息字节数上限（600 KiB）需在 `src/worker.js` 的 `MAX_BYTES` 和 `frontend/main.js` 的 `MAX_BYTES` 中修改。
 
