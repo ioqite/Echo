@@ -3,8 +3,7 @@ node_modules/
 .dev.vars
 .env
 echo.zip
-public/main.js
-public/main.js.map
+*.map
 public/chunks/
 *.log
 .DS_Store

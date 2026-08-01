@@ -2,7 +2,7 @@
 # deploy.sh — One-command deploy to Cloudflare Workers + D1.
 #
 # Prerequisites:
-#   1. npx wrangler login   (or set CLOUDFLARE_API_TOKEN env var)
+#   1. wrangler login   (or set CLOUDFLARE_API_TOKEN env var)
 #   2. Set ECHO_DB_ID:
 #        - Already have a D1 database?  export ECHO_DB_ID=xxxxxxxx
 #        - Need to create one?          Leave ECHO_DB_ID unset and this script
@@ -14,7 +14,6 @@
 # Usage:
 #   ./scripts/deploy.sh                    # create DB if needed, build, deploy
 #   ECHO_DB_ID=xxx ./scripts/deploy.sh     # use existing DB
-#   SKIP_DB_INIT=1 ./scripts/deploy.sh     # skip schema init (already initialized)
 
 set -euo pipefail
 
@@ -44,7 +43,7 @@ fi
 
 if [ -z "$DB_ID" ]; then
   echo "  ECHO_DB_ID not set. Creating a new D1 database..."
-  CREATE_OUTPUT=$(npx wrangler d1 create echo-db 2>&1) || {
+  CREATE_OUTPUT=$(wrangler d1 create echo-db 2>&1) || {
     echo "  Failed to create D1 database. Output:"
     echo "$CREATE_OUTPUT"
     exit 1
@@ -55,7 +54,7 @@ if [ -z "$DB_ID" ]; then
     echo "  Full output:"
     echo "$CREATE_OUTPUT"
     echo ""
-    echo "  The database may have been created. Find it with: npx wrangler d1 list"
+    echo "  The database may have been created. Find it with: wrangler d1 list"
     echo "  Then set ECHO_DB_ID and re-run this script."
     exit 1
   fi
@@ -75,12 +74,8 @@ echo "  Injecting database_id into wrangler.toml..."
 ECHO_DB_ID="$DB_ID" node scripts/prepare-wrangler.js
 
 # ---- 3. Initialize schema ----
-if [ "${SKIP_DB_INIT:-0}" != "1" ]; then
-  echo "[3/5] Initializing database schema (remote)..."
-  npx wrangler d1 execute echo-db --remote --file=./schema.sql
-else
-  echo "[3/5] Skipping schema init (SKIP_DB_INIT=1)."
-fi
+echo "[3/5] Initializing database schema (remote)..."
+wrangler d1 execute echo-db --remote --file=./schema.sql
 
 # ---- 4. Set PASSWORD secret ----
 echo "[4/5] Setting PASSWORD secret..."
@@ -94,7 +89,7 @@ if [ -z "${PASSWORD:-}" ]; then
   echo
 fi
 if [ -n "$PASSWORD" ]; then
-  echo "$PASSWORD" | npx wrangler secret put PASSWORD
+  echo "$PASSWORD" | wrangler secret put PASSWORD
   echo "  PASSWORD secret set."
 else
   echo "  WARNING: No PASSWORD provided. Using default from wrangler.toml [vars]."
@@ -103,7 +98,7 @@ fi
 # ---- 5. Build & deploy ----
 echo "[5/5] Building frontend and deploying..."
 npm run build
-npx wrangler deploy
+wrangler deploy
 
 echo ""
 echo "=========================================="
