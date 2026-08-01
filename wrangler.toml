@@ -29,10 +29,10 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "echo-db"
-database_id = "291f1f9b-a2ef-41b7-a5a7-5054f1570f20"
+database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
 
 # Initial password (used only on first run; afterwards password is stored in D1).
 # For production, ALWAYS use a secret instead:
 #   npx wrangler secret put PASSWORD
 [vars]
-PASSWORD = "change-me-please"
+PASSWORD = "change-me-please-change-me-please"
